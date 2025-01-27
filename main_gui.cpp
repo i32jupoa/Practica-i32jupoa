@@ -20,7 +20,7 @@ public:
     MainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
         // --- Configurar la ventana ---
         setWindowTitle("Sistema Gestión SICUE (Qt)");
-        resize(900, 600);  // Un poco más grande
+        resize(900, 600);
 
         // --- Menú superior ---
         QMenu* fileMenu = menuBar()->addMenu("Archivo");
@@ -48,7 +48,7 @@ public:
         )");
         mainLayout->addWidget(title);
 
-        // 2) PEQUEÑA INTRODUCCIÓN
+        // 2) PEQUEÑA INTRO
         QLabel* introLabel = new QLabel(
             "Bienvenido/a al Sistema de Gestión SICUE.\n\n"
             "Este programa permite:\n"
@@ -66,7 +66,7 @@ public:
         )");
         mainLayout->addWidget(introLabel, /*stretch=*/1);
 
-        // 3) BARRA DE BOTONES (abajo)
+        // 3) BARRA DE BOTONES
         QHBoxLayout* buttonLayout = new QHBoxLayout();
         mainLayout->addLayout(buttonLayout);
 
@@ -77,7 +77,6 @@ public:
         QPushButton* mostrarPlanesBtn    = new QPushButton("Mostrar Planes");
         QPushButton* salirBtn            = new QPushButton("Salir");
 
-        // Añadir botones a la fila
         buttonLayout->addWidget(inscribirBtn);
         buttonLayout->addWidget(agregarPlanBtn);
         buttonLayout->addWidget(consultarBtn);
@@ -85,26 +84,15 @@ public:
         buttonLayout->addWidget(mostrarPlanesBtn);
         buttonLayout->addWidget(salirBtn);
 
-        // 4) Conexiones (lambdas)
-        connect(inscribirBtn, &QPushButton::clicked, this, [this]() {
-            inscribirUsuarioGUI();
-        });
-        connect(agregarPlanBtn, &QPushButton::clicked, this, [this]() {
-            agregarPlanGUI();
-        });
-        connect(consultarBtn, &QPushButton::clicked, this, [this]() {
-            consultarInscripcionGUI();
-        });
-        connect(mostrarInscritosBtn, &QPushButton::clicked, this, [this]() {
-            mostrarInscritosGUI();
-        });
-        connect(mostrarPlanesBtn, &QPushButton::clicked, this, [this]() {
-            mostrarPlanesGUI();
-        });
-        connect(salirBtn, &QPushButton::clicked, this, &MainWindow::close);
+        // Conexiones (lambdas)
+        connect(inscribirBtn,        &QPushButton::clicked, this, [this]() { inscribirUsuarioGUI(); });
+        connect(agregarPlanBtn,      &QPushButton::clicked, this, [this]() { agregarPlanGUI(); });
+        connect(consultarBtn,        &QPushButton::clicked, this, [this]() { consultarInscripcionGUI(); });
+        connect(mostrarInscritosBtn, &QPushButton::clicked, this, [this]() { mostrarInscritosGUI(); });
+        connect(mostrarPlanesBtn,    &QPushButton::clicked, this, [this]() { mostrarPlanesGUI(); });
+        connect(salirBtn,            &QPushButton::clicked, this, &MainWindow::close);
 
-        // 5) Estilos
-        // Podemos aplicar un stylesheet global a la ventana principal
+        // Estilos de los botones
         setStyleSheet(R"(
             QMainWindow {
                 background-color: #f5f5f5;
@@ -128,22 +116,23 @@ public:
     }
 
 private:
-    // -----------
-    // Funciones 
-    // -----------
+    // ----------------------------------------------------------------------
+    // Funciones GUI auxiliares para replicar la lógica de funciones.cpp
+    // ----------------------------------------------------------------------
 
     void inscribirUsuarioGUI() {
-        // Simula la lógica de inscribirUsuario() de consola, pidiendo datos con diálogos
         bool ok;
 
-        // 1) Pedir DNI
+        // 1) DNI
         QString dni = QInputDialog::getText(this, "Inscribir Usuario",
                                             "Ingrese DNI:", QLineEdit::Normal,
-                                            QString(), &ok);
+                                            "", &ok);
         if (!ok || dni.isEmpty()) return;
 
+        // Verificar en Usuarios.txt
         if (!existeEnFichero(dni.toStdString(), "Usuarios.txt")) {
-            QMessageBox::warning(this, "Error", "El Usuario no cumple los requisitos para SICUE.");
+            QMessageBox::warning(this, "Error",
+                                 "El Usuario no cumple requisitos (DNI no encontrado en Usuarios.txt).");
             return;
         }
 
@@ -152,38 +141,38 @@ private:
         tipos << "Alumno" << "Profesor";
         QString tipoUsuario = QInputDialog::getItem(this, "Tipo de Usuario",
                                                    "Seleccione:", tipos, 0, false, &ok);
-        if (!ok) return;
+        if (!ok || tipoUsuario.isEmpty()) return;
 
         // 3) Nombre
         QString nombre = QInputDialog::getText(this, "Nombre",
                                               "Ingrese el nombre:", QLineEdit::Normal,
-                                              QString(), &ok);
+                                              "", &ok);
         if (!ok) return;
 
         // 4) Apellidos
         QString apellidos = QInputDialog::getText(this, "Apellidos",
                                                  "Ingrese los apellidos:", QLineEdit::Normal,
-                                                 QString(), &ok);
+                                                 "", &ok);
         if (!ok) return;
 
         // 5) Correo
         QString correo = QInputDialog::getText(this, "Correo",
-                                              "Ingrese el correo:", QLineEdit::Normal,
-                                              QString(), &ok);
+                                              "Ingrese el correo electrónico:", QLineEdit::Normal,
+                                              "", &ok);
         if (!ok) return;
 
         // 6) Plan
         QString plan = QInputDialog::getText(this, "Plan",
-                                            "Ingrese el nombre del plan:", QLineEdit::Normal,
-                                            QString(), &ok);
+                                            "Ingrese el nombre del plan de convalidación:", QLineEdit::Normal,
+                                            "", &ok);
         if (!ok || plan.isEmpty()) return;
 
         if (!existePlan(plan.toStdString())) {
-            QMessageBox::warning(this, "Error", "El plan no existe.");
+            QMessageBox::warning(this, "Error", "El plan no existe en planes.txt.");
             return;
         }
 
-        // 7) Duración (1 o 2)
+        // 7) Cuatrimestre (1 o 2)
         int cuatrimestre = QInputDialog::getInt(this, "Duración",
                                                "Ingrese cuatrimestres (1 ó 2):", 1, 1, 2, 1, &ok);
         if (!ok) return;
@@ -199,21 +188,29 @@ private:
             return;
         }
 
-        // Guardar en "inscritos.txt"
-        std::ofstream out("inscritos.txt", std::ios::app);
-        if (!out) {
-            QMessageBox::critical(this, "Error", "No se pudo abrir inscritos.txt");
+        // Guardar en preinscritos.txt (estado "en proceso")
+        std::ofstream pre("preinscritos.txt", std::ios::app);
+        if (!pre.is_open()) {
+            QMessageBox::critical(this, "Error", "No se pudo abrir preinscritos.txt");
             return;
         }
-
+        // Obtenemos la fecha
+        std::string fecha = obtenerFechaActual();
+        // Convertimos a std::string
         std::string tipo = (tipoUsuario == "Alumno") ? "Alumno" : "Profesor";
-        out << dni.toStdString() << ", "
+        pre << dni.toStdString() << ", "
             << nombre.toStdString() << " " << apellidos.toStdString() << ", "
             << correo.toStdString() << ", "
             << plan.toStdString() << ", "
             << cuatrimestre << " cuatrimestre(s), "
-            << tipo << "\n";
-        QMessageBox::information(this, "Éxito", "Inscripción confirmada.");
+            << "en proceso, "
+            << fecha << ", "
+            << tipo
+            << "\n";
+        pre.close();
+
+        QMessageBox::information(this, "Éxito",
+                                 "Se ha inscrito al usuario en preinscritos.txt (en proceso).");
     }
 
     void agregarPlanGUI() {
@@ -221,65 +218,86 @@ private:
         // 1) Nombre del plan
         QString nombrePlan = QInputDialog::getText(this, "Agregar Plan",
                                                   "Nombre del plan:", QLineEdit::Normal,
-                                                  QString(), &ok);
+                                                  "", &ok);
         if (!ok || nombrePlan.isEmpty()) return;
 
-        // 2) Universidad de origen
+        // 2) Univ. origen (solo Córdoba)
         QString origen = QInputDialog::getText(this, "Universidad de Origen",
-                                              "Ingrese la U. de origen:", QLineEdit::Normal,
-                                              QString(), &ok);
+                                              "Ingrese la U. de origen (Universidad de Cordoba):",
+                                              QLineEdit::Normal, "", &ok);
         if (!ok) return;
-
         if (!perteneceAUniversidad(origen.toStdString())) {
-            QMessageBox::warning(this, "Error", "Universidad de origen no está en SICUE.");
+            QMessageBox::warning(this, "Error", "La U. de origen no está en SICUE.");
+            return;
+        }
+        if (toLower(origen.toStdString()) != "universidad de cordoba"
+            && toLower(origen.toStdString()) != "universidad de córdoba") {
+            QMessageBox::warning(this, "Error", "La U. de origen debe ser la de Córdoba.");
             return;
         }
 
-        // 3) Universidad de destino
+        // 3) Univ. destino (≠ Córdoba)
         QString destino = QInputDialog::getText(this, "Universidad de Destino",
-                                               "Ingrese la U. de destino:", QLineEdit::Normal,
-                                               QString(), &ok);
+                                               "Ingrese la U. de destino (no puede ser Córdoba):",
+                                               QLineEdit::Normal, "", &ok);
         if (!ok) return;
-
         if (!perteneceAUniversidad(destino.toStdString())) {
-            QMessageBox::warning(this, "Error", "Universidad de destino no está en SICUE.");
+            QMessageBox::warning(this, "Error", "La U. de destino no está en SICUE.");
+            return;
+        }
+        if (toLower(destino.toStdString()) == "universidad de cordoba"
+            || toLower(destino.toStdString()) == "universidad de córdoba") {
+            QMessageBox::warning(this, "Error", "La U. de destino no puede ser la de Córdoba.");
             return;
         }
 
         // 4) Carrera
         QString carrera = QInputDialog::getText(this, "Carrera",
-                                               "Ingrese la carrera:", QLineEdit::Normal,
-                                               QString(), &ok);
+                                               "Ingrese la carrera asociada:", QLineEdit::Normal,
+                                               "", &ok);
         if (!ok) return;
-
         if (!existeCarrera(carrera.toStdString())) {
-            QMessageBox::warning(this, "Error", "La carrera no existe.");
+            QMessageBox::warning(this, "Error", "La carrera no existe en carrera.txt.");
             return;
         }
 
-        // 5) Asignaturas (bucle con getText)
+        // 5) Asignaturas
         std::vector<std::string> asignaturas;
         while (true) {
             QString asig = QInputDialog::getText(this, "Asignaturas",
-                                                "Ingrese una asignatura (deje vacío p/terminar):",
+                                                "Ingrese una asignatura (o vacío para terminar):",
                                                  QLineEdit::Normal, "", &ok);
             if (!ok || asig.isEmpty()) {
-                break; 
+                break;
             }
             asignaturas.push_back(asig.toStdString());
         }
+        if (asignaturas.empty()) {
+            QMessageBox::warning(this, "Error", "No se introdujo ninguna asignatura.");
+            return;
+        }
 
-        // Guardamos en planes.txt
+        // 6) Confirmar
+        auto resp = QMessageBox::question(
+            this, "Confirmar Plan",
+            QString("¿Crear el plan '%1'?\nOrigen: %2\nDestino: %3\nCarrera: %4")
+                .arg(nombrePlan).arg(origen).arg(destino).arg(carrera)
+        );
+        if (resp != QMessageBox::Yes) {
+            QMessageBox::information(this, "Cancelado", "Se canceló la creación del plan.");
+            return;
+        }
+
+        // Guardar en planes.txt
         std::ofstream out("planes.txt", std::ios::app);
         if (!out) {
             QMessageBox::critical(this, "Error", "No se pudo abrir planes.txt");
             return;
         }
-
         out << nombrePlan.toStdString() << ": "
             << origen.toStdString() << " --> " << destino.toStdString()
-            << ", Carrera: " << carrera.toStdString() << "\n"
-            << "Asignaturas convalidadas:\n";
+            << ", Carrera: " << carrera.toStdString() << "\n";
+        out << "Asignaturas convalidadas:\n";
         for (auto &a : asignaturas) {
             out << "- " << a << "\n";
         }
@@ -295,44 +313,62 @@ private:
                                             "", &ok);
         if (!ok || dni.isEmpty()) return;
 
-        std::ifstream in("inscritos.txt");
-        if (!in) {
-            QMessageBox::critical(this, "Error", "No se pudo abrir inscritos.txt");
-            return;
-        }
-        std::string linea;
-        bool encontrado = false;
-        while (std::getline(in, linea)) {
-            if (linea.empty()) continue;
-            size_t pos = linea.find(", ");
-            if (pos != std::string::npos) {
-                std::string dniUser = linea.substr(0, pos);
-                if (dniUser == dni.toStdString()) {
-                    encontrado = true;
-                    QMessageBox::information(
-                        this, "Datos de Inscripción",
-                        QString::fromStdString(linea)
-                    );
-                    break;
+        // Simulamos la lógica de consultarInscripcion() (versión resumida)
+        // 1) Buscar en preinscritos
+        {
+            std::ifstream pre("preinscritos.txt");
+            if (pre.is_open()) {
+                std::string linea;
+                while (std::getline(pre, linea)) {
+                    if (linea.empty()) continue;
+                    size_t pos = linea.find(", ");
+                    if (pos != std::string::npos) {
+                        std::string dniUsuario = trim(linea.substr(0, pos));
+                        if (dniUsuario == dni.toStdString()) {
+                            QMessageBox::information(this, "Resultado",
+                                QString("El usuario %1 está en preinscritos (en proceso).").arg(dni));
+                            return;
+                        }
+                    }
                 }
             }
         }
-        if (!encontrado) {
-            QMessageBox::information(this, "No encontrado",
-                                     "DNI no encontrado en inscritos.txt");
+
+        // 2) Buscar en inscritos
+        {
+            std::ifstream ins("inscritos.txt");
+            if (ins.is_open()) {
+                std::string linea;
+                while (std::getline(ins, linea)) {
+                    if (linea.empty()) continue;
+                    size_t pos = linea.find(", ");
+                    if (pos != std::string::npos) {
+                        std::string dniUsuario = trim(linea.substr(0, pos));
+                        if (dniUsuario == dni.toStdString()) {
+                            QMessageBox::information(this, "Resultado",
+                                QString("El usuario %1 está en inscritos (confirmada).").arg(dni));
+                            return;
+                        }
+                    }
+                }
+            }
         }
+
+        // 3) No encontrado
+        QMessageBox::information(this, "No encontrado",
+                                 QString("El usuario %1 no está en preinscritos ni en inscritos.").arg(dni));
     }
 
     void mostrarInscritosGUI() {
-        std::ifstream in("inscritos.txt");
-        if (!in) {
+        std::ifstream ins("inscritos.txt");
+        if (!ins.is_open()) {
             QMessageBox::critical(this, "Error", "No se pudo abrir inscritos.txt");
             return;
         }
         std::string linea;
         QString acumulado;
         bool hayDatos = false;
-        while (std::getline(in, linea)) {
+        while (std::getline(ins, linea)) {
             if (!linea.empty()) {
                 acumulado += QString::fromStdString(linea) + "\n";
                 hayDatos = true;
@@ -345,15 +381,15 @@ private:
     }
 
     void mostrarPlanesGUI() {
-        std::ifstream in("planes.txt");
-        if (!in) {
+        std::ifstream planf("planes.txt");
+        if (!planf.is_open()) {
             QMessageBox::critical(this, "Error", "No se pudo abrir planes.txt");
             return;
         }
         std::string linea;
         QString acumulado;
         bool hayDatos = false;
-        while (std::getline(in, linea)) {
+        while (std::getline(planf, linea)) {
             acumulado += QString::fromStdString(linea) + "\n";
             hayDatos = true;
         }
@@ -364,9 +400,10 @@ private:
     }
 };
 
-// Para no requerir main_gui.moc, no usamos Q_OBJECT en un .h aparte. 
-// Este ejemplo funciona tal cual.
-#include <QObject> 
+// ------------------------------------------------------------------------
+// MAIN (Qt)
+// ------------------------------------------------------------------------
+#include <QObject>
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);

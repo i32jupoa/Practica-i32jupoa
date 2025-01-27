@@ -1,1 +1,9 @@
 Plan A: Universidad de Cordoba --> Universidad de Malaga, Carrera: Ingenieria Informatica
+Asignaturas convalidadas:
+- POO
+- SO
+- AC
+- IS
+- BBDD
+
+

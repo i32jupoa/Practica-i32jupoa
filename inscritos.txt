@@ -1,1 +1,1 @@
-12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 2 cuatrimestre(s)
+12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 2 cuatrimestre(s), confirmada, 2025-01-27, Alumno
