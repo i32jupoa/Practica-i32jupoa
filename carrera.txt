@@ -1,0 +1,51 @@
+Ingenieria Informatica
+Medicina
+Administracion y Direccion de Empresas
+Derecho
+Biologia
+Educacion Primaria
+Educacion Infantil
+Economia
+Psicologia
+Arquitectura
+Farmacia
+Historia
+Fisica
+Quimica
+Ciencias Ambientales
+Matematicas
+Enfermeria
+Trabajo Social
+Turismo
+Filosofia
+Ciencias Politicas
+Sociologia
+Ingenieria Mecanica
+Ingenieria Civil
+Ingenieria Industrial
+Ingenieria Electrica
+Ingenieria Electronica
+Ingenieria Aeroespacial
+Relaciones Internacionales
+Comunicacion Audiovisual
+Periodismo
+Traduccion e Interpretacion
+Bellas Artes
+Diseno Grafico
+Publicidad y Relaciones Publicas
+Marketing
+Logopedia
+Nutricion Humana y Dietetica
+Odontologia
+Veterinaria
+Ciencias del Deporte
+Antropologia Social y Cultural
+Educacion Social
+Musicologia
+Criminologia
+Geografia
+Ingenieria de Telecomunicacion
+Bioquimica
+Genetica
+Estadistica
+Informatica Biomedica
