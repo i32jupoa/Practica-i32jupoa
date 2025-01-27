@@ -1,47 +1,50 @@
 #include "funciones.h"
+#include <iostream>
+#include <limits>
 
 int main() {
-    int opcion;
-    do {
-        std::cout << "\n--- Sistema Gestion SICUE ---\n";
-        std::cout << "1. Inscribir Usuario\n";
-        std::cout << "2. Agregar plan de convalidacion\n";
-        std::cout << "3. Consultar inscripcion\n";
-        std::cout << "4. Mostrar lista de inscritos\n";
-        std::cout << "5. Ejecutar pruebas de error\n";
-        std::cout << "6. Mostrar planes\n";  
-        std::cout << "7. Salir\n\n";
-        std::cout << "Seleccione una opcion: ";
-        std::cin >> opcion;
-        std::cin.ignore();
-        std::cout << "\n";
+    int opcion = 0;
 
-        switch (opcion) {
-            case 1:
-                inscribirUsuario();
-                break;
-            case 2:
-                agregarPlan();
-                break;
-            case 3:
-                consultarInscripcion();
-                break;
-            case 4:
-                mostrarInscritos();
-                break;
-            case 5:
-                pruebasErrores();
-                break;
-            case 6:
-                mostrarPlanes();  
-                break;
-            case 7:
-                std::cout << "Saliendo del sistema...\n";
-                break;
-            default:
-                std::cout << "Opción no válida. Intente de nuevo.\n";
+    do {
+        std::cout << "=== MENU SICUE (Consola) ===\n";
+        std::cout << "1. Inscribir Usuario\n";
+        std::cout << "2. Agregar Plan\n";
+        std::cout << "3. Consultar Inscripcion\n";
+        std::cout << "4. Mostrar Inscritos\n";
+        std::cout << "5. Mostrar Planes\n";
+        std::cout << "6. Ejecutar pruebas\n";
+        std::cout << "0. Salir\n";
+        std::cout << "Seleccione una opción: ";
+        std::cin >> opcion;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpiar buffer
+
+        switch(opcion) {
+        case 1:
+            inscribirUsuario();
+            break;
+        case 2:
+            agregarPlan();
+            break;
+        case 3:
+            consultarInscripcion();
+            break;
+        case 4:
+            mostrarInscritos();
+            break;
+        case 5:
+            mostrarPlanes();
+            break;
+        case 6:
+            pruebasErrores();
+            break;
+        case 0:
+            std::cout << "Saliendo...\n";
+            break;
+        default:
+            std::cout << "Opción inválida.\n";
+            break;
         }
-    } while (opcion != 7);
+    } while(opcion != 0);
 
     return 0;
 }
