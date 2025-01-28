@@ -13,3 +13,9 @@ Asignaturas convalidadas:
 - Droga
 
 
+Plan C: Universidad de Córdoba --> Universidad de Granada, Carrera: Medicina
+Asignaturas convalidadas:
+- hola
+- adios
+
+

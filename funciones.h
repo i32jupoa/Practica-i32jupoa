@@ -1,3 +1,4 @@
+// funciones.h
 #ifndef FUNCIONES_H
 #define FUNCIONES_H
 
@@ -14,7 +15,7 @@ struct Usuario {
     std::string correo;
     std::string estadoInscripcion;
     std::string fechaInscripcion;
-    std::string tipoUsuario;  // 'Alumno' o 'Profesor' (heredado del código anterior)
+    std::string tipoUsuario;  // 'Alumno' o 'Profesor'
 };
 
 struct Plan {

@@ -1,3 +1,5 @@
+// main_gui.cpp
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QMenuBar>
@@ -8,11 +10,13 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QAction>
+#include <QComboBox>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QDialog>
 #include <QScrollArea>
-#include <QGroupBox>
+#include <QTextEdit>
+#include <map>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -20,8 +24,25 @@
 
 #include "funciones.h"
 
+// Definición de cargarUniversidades() directamente en main_gui.cpp
+std::vector<std::string> cargarUniversidades() {
+    std::vector<std::string> universidades;
+    std::ifstream archivo("universidad.txt");
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir universidad.txt.\n";
+        return universidades;
+    }
+    std::string linea;
+    while (std::getline(archivo, linea)) {
+        if (!linea.empty()) {
+            universidades.push_back(trim(linea));
+        }
+    }
+    archivo.close();
+    return universidades;
+}
+
 // Función auxiliar para obtener la universidad de destino de un plan
-// (reutilizamos la misma lógica que en el .cpp anterior)
 static std::string obtenerUniversidadDestinoDelPlan(const std::string &nombrePlan) {
     std::ifstream archivo("planes.txt");
     if (!archivo.is_open()) {
@@ -37,7 +58,10 @@ static std::string obtenerUniversidadDestinoDelPlan(const std::string &nombrePla
         size_t pos = linea.find(":");
         if (pos != std::string::npos) {
             std::string planEncontrado = trim(linea.substr(0, pos));
-            if (toLower(planEncontrado) == toLower(nombrePlan)) {
+            // Convertir a minúsculas para comparación
+            std::transform(planEncontrado.begin(), planEncontrado.end(), planEncontrado.begin(), ::tolower);
+            std::string nombrePlanLower = toLower(nombrePlan);
+            if (planEncontrado == nombrePlanLower) {
                 // Formato: "Plan1: UnivCordoba --> UnivZaragoza, Carrera: X"
                 size_t flechaPos = linea.find("-->");
                 if (flechaPos == std::string::npos) {
@@ -62,6 +86,9 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
+        // Cargar la lista de universidades al iniciar la ventana
+        listaUniversidades = cargarUniversidades();
+
         // --- Configurar la ventana ---
         setWindowTitle("Sistema Gestión SICUE (Qt)");
         resize(900, 600);
@@ -118,26 +145,26 @@ public:
         QPushButton* inscribirBtn        = new QPushButton("Inscribir Usuario");
         QPushButton* agregarPlanBtn      = new QPushButton("Agregar Plan");
         QPushButton* consultarBtn        = new QPushButton("Consultar Inscripción");
-        QPushButton* mostrarInscritosBtn = new QPushButton("Mostrar Inscritos");
+        QPushButton* mostrarMatriculadosBtn = new QPushButton("Mostrar Lista Matriculados");
         QPushButton* mostrarPlanesBtn    = new QPushButton("Mostrar Planes");
-        QPushButton* matricularBtn       = new QPushButton("Matricular Estudiantes");
+        QPushButton* matricularBtn       = new QPushButton("Matricular Usuario");
         QPushButton* salirBtn            = new QPushButton("Salir");
 
         buttonLayout->addWidget(inscribirBtn);
         buttonLayout->addWidget(agregarPlanBtn);
         buttonLayout->addWidget(consultarBtn);
-        buttonLayout->addWidget(mostrarInscritosBtn);
+        buttonLayout->addWidget(mostrarMatriculadosBtn);
         buttonLayout->addWidget(mostrarPlanesBtn);
         buttonLayout->addWidget(matricularBtn);
         buttonLayout->addWidget(salirBtn);
 
-        // Conexiones (lambdas)
-        connect(inscribirBtn,        &QPushButton::clicked, this, [this]() { inscribirUsuarioGUI(); });
-        connect(agregarPlanBtn,      &QPushButton::clicked, this, [this]() { agregarPlanGUI(); });
-        connect(consultarBtn,        &QPushButton::clicked, this, [this]() { consultarInscripcionGUI(); });
-        connect(mostrarInscritosBtn, &QPushButton::clicked, this, [this]() { mostrarInscritosGUI(); });
-        connect(mostrarPlanesBtn,    &QPushButton::clicked, this, [this]() { mostrarPlanesGUI(); });
-        connect(matricularBtn,       &QPushButton::clicked, this, [this]() { matricularEstudiantesGUI(); });
+        // Conexiones (slots)
+        connect(inscribirBtn,        &QPushButton::clicked, this, &MainWindow::inscribirUsuarioGUI);
+        connect(agregarPlanBtn,      &QPushButton::clicked, this, &MainWindow::agregarPlanGUI);
+        connect(consultarBtn,        &QPushButton::clicked, this, &MainWindow::consultarInscripcionGUI);
+        connect(mostrarMatriculadosBtn, &QPushButton::clicked, this, &MainWindow::mostrarListaMatriculadosGUI);
+        connect(mostrarPlanesBtn,    &QPushButton::clicked, this, &MainWindow::mostrarPlanesGUI);
+        connect(matricularBtn,       &QPushButton::clicked, this, &MainWindow::matricularUsuarioGUI);
         connect(salirBtn,            &QPushButton::clicked, this, &MainWindow::close);
 
         // Estilos de los botones
@@ -163,10 +190,7 @@ public:
         )");
     }
 
-private slots:
-    // ----------------------------------------------------------------------
-    // FUNCIONES GUI (similares a las de funciones.cpp)
-    // ----------------------------------------------------------------------
+    // Implementación de las funciones GUI
 
     void inscribirUsuarioGUI() {
         bool ok;
@@ -266,41 +290,42 @@ private slots:
                                                   "", &ok);
         if (!ok || nombrePlan.isEmpty()) return;
 
-        // 2) Univ. origen (solo Córdoba)
-        QString origen = QInputDialog::getText(this, "Universidad de Origen",
-                                              "Ingrese la U. de origen (Universidad de Cordoba):",
-                                              QLineEdit::Normal, "", &ok);
-        if (!ok) return;
-        if (!perteneceAUniversidad(origen.toStdString())) {
-            QMessageBox::warning(this, "Error", "La U. de origen no está en SICUE.");
-            return;
+        // 2) Univ. origen (lista desplegable con "Universidad de Córdoba" preseleccionada)
+        // Dado que la universidad de origen debe ser "Universidad de Córdoba", esta se preselecciona
+        QString origen = "Universidad de Córdoba";
+        QMessageBox::information(this, "Universidad de Origen",
+                                 "La universidad de origen es 'Universidad de Córdoba' y está preseleccionada.");
+
+        // 3) Univ. destino (lista desplegable, excluyendo Córdoba)
+        // Crear una lista de universidades de destino excluyendo Córdoba
+        std::vector<std::string> univsDestino;
+        for (const auto& univ : listaUniversidades) {
+            std::string univLower = toLower(univ);
+            if (univLower != "universidad de cordoba" && univLower != "universidad de córdoba") {
+                univsDestino.push_back(univ);
+            }
         }
-        if (toLower(origen.toStdString()) != "universidad de cordoba"
-            && toLower(origen.toStdString()) != "universidad de córdoba") {
-            QMessageBox::warning(this, "Error", "La U. de origen debe ser la de Córdoba.");
+
+        if (univsDestino.empty()) {
+            QMessageBox::warning(this, "Error", "No hay universidades de destino disponibles.");
             return;
         }
 
-        // 3) Univ. destino (≠ Córdoba)
-        QString destino = QInputDialog::getText(this, "Universidad de Destino",
-                                               "Ingrese la U. de destino (no puede ser Córdoba):",
-                                               QLineEdit::Normal, "", &ok);
-        if (!ok) return;
-        if (!perteneceAUniversidad(destino.toStdString())) {
-            QMessageBox::warning(this, "Error", "La U. de destino no está en SICUE.");
-            return;
+        QStringList destList;
+        for (const auto& univ : univsDestino) {
+            destList << QString::fromStdString(univ);
         }
-        if (toLower(destino.toStdString()) == "universidad de cordoba"
-            || toLower(destino.toStdString()) == "universidad de córdoba") {
-            QMessageBox::warning(this, "Error", "La U. de destino no puede ser la de Córdoba.");
-            return;
-        }
+
+        QString destino = QInputDialog::getItem(this, "Universidad de Destino",
+                                               "Seleccione la universidad de destino:",
+                                               destList, 0, false, &ok);
+        if (!ok || destino.isEmpty()) return;
 
         // 4) Carrera
         QString carrera = QInputDialog::getText(this, "Carrera",
                                                "Ingrese la carrera asociada al plan:",
                                                QLineEdit::Normal, "", &ok);
-        if (!ok) return;
+        if (!ok || carrera.isEmpty()) return;
         if (!existeCarrera(carrera.toStdString())) {
             QMessageBox::warning(this, "Error", "La carrera no existe en carrera.txt.");
             return;
@@ -322,7 +347,7 @@ private slots:
             return;
         }
 
-        // 6) Confirmar
+        // 6) Confirmar el plan
         auto resp = QMessageBox::question(
             this, "Confirmar Plan",
             QString("¿Crear el plan '%1'?\nOrigen: %2\nDestino: %3\nCarrera: %4")
@@ -369,8 +394,20 @@ private slots:
                     if (pos != std::string::npos) {
                         std::string dniUsuario = trim(linea.substr(0, pos));
                         if (dniUsuario == dni.toStdString()) {
+                            // Extraer fecha de inscripción
+                            std::stringstream ss(linea);
+                            std::vector<std::string> partes;
+                            std::string tmp;
+                            while (std::getline(ss, tmp, ',')) {
+                                partes.push_back(trim(tmp));
+                            }
+                            std::string fecha;
+                            if (partes.size() >= 7) {
+                                fecha = partes[6];
+                            }
                             QMessageBox::information(this, "Resultado",
-                                QString("El usuario %1 está en preinscritos (en proceso).").arg(dni));
+                                QString("El usuario %1 está en preinscritos (en proceso).\nFecha de Inscripción: %2.")
+                                .arg(dni).arg(QString::fromStdString(fecha)));
                             return;
                         }
                     }
@@ -378,7 +415,7 @@ private slots:
             }
         }
 
-        // Buscar en inscritos
+        // Buscar en matriculados
         {
             std::ifstream ins("inscritos.txt");
             if (ins.is_open()) {
@@ -389,8 +426,20 @@ private slots:
                     if (pos != std::string::npos) {
                         std::string dniUsuario = trim(linea.substr(0, pos));
                         if (dniUsuario == dni.toStdString()) {
+                            // Extraer fecha de inscripción
+                            std::stringstream ss(linea);
+                            std::vector<std::string> partes;
+                            std::string tmp;
+                            while (std::getline(ss, tmp, ',')) {
+                                partes.push_back(trim(tmp));
+                            }
+                            std::string fecha;
+                            if (partes.size() >= 7) {
+                                fecha = partes[6];
+                            }
                             QMessageBox::information(this, "Resultado",
-                                QString("El usuario %1 está en inscritos (confirmada).").arg(dni));
+                                QString("El usuario %1 está en matriculados (confirmada).\nFecha de Inscripción: %2.")
+                                .arg(dni).arg(QString::fromStdString(fecha)));
                             return;
                         }
                     }
@@ -400,28 +449,82 @@ private slots:
 
         // No encontrado
         QMessageBox::information(this, "No encontrado",
-                                 QString("El usuario %1 no está en preinscritos ni en inscritos.").arg(dni));
+                                 QString("El usuario %1 no está en preinscritos ni en matriculados.").arg(dni));
     }
 
-    void mostrarInscritosGUI() {
+    void mostrarListaMatriculadosGUI() {
         std::ifstream ins("inscritos.txt");
         if (!ins.is_open()) {
             QMessageBox::critical(this, "Error", "No se pudo abrir inscritos.txt");
             return;
         }
         std::string linea;
-        QString acumulado;
-        bool hayDatos = false;
+        // Mapa para agrupar matriculados por plan
+        std::map<std::string, std::vector<std::string>> matriculadosPorPlan;
+
         while (std::getline(ins, linea)) {
-            if (!linea.empty()) {
-                acumulado += QString::fromStdString(linea) + "\n";
-                hayDatos = true;
+            if (linea.empty()) continue;
+            // Parsear la línea para obtener el plan
+            // Formato: DNI, Nombre completo, Correo, Plan, Cuatrimestre, Estado, Fecha, Tipo
+            std::stringstream ss(linea);
+            std::vector<std::string> partes;
+            std::string tmp;
+            while (std::getline(ss, tmp, ',')) {
+                partes.push_back(trim(tmp));
+            }
+            if (partes.size() >= 4) {
+                std::string plan = partes[3];
+                matriculadosPorPlan[plan].push_back(linea);
             }
         }
-        if (!hayDatos) {
-            acumulado = "No hay inscritos aún.\n";
+        ins.close();
+
+        // Construir el QString para mostrar
+        QString acumulado;
+        for (const auto& [plan, matriculados] : matriculadosPorPlan) {
+            acumulado += QString("Plan %1:\n").arg(QString::fromStdString(plan));
+            for (const auto& matriculado : matriculados) {
+                // Formatear cada matriculado de manera legible
+                // Por ejemplo, extraer campos y mostrar de forma estructurada
+                std::stringstream ss(matriculado);
+                std::vector<std::string> partes;
+                std::string campo;
+                while (std::getline(ss, campo, ',')) {
+                    partes.push_back(trim(campo));
+                }
+                if (partes.size() >= 8) {
+                    acumulado += QString("  DNI: %1\n").arg(QString::fromStdString(partes[0]));
+                    acumulado += QString("  Nombre: %1\n").arg(QString::fromStdString(partes[1]));
+                    acumulado += QString("  Correo: %1\n").arg(QString::fromStdString(partes[2]));
+                    acumulado += QString("  Cuatrimestre: %1\n").arg(QString::fromStdString(partes[4]));
+                    acumulado += QString("  Estado: %1\n").arg(QString::fromStdString(partes[5]));
+                    acumulado += QString("  Fecha de Inscripción: %1\n").arg(QString::fromStdString(partes[6]));
+                    acumulado += QString("  Tipo de Usuario: %1\n").arg(QString::fromStdString(partes[7]));
+                    acumulado += "\n"; // Espacio entre matriculados
+                }
+            }
+            acumulado += "\n"; // Espacio entre planes
         }
-        QMessageBox::information(this, "Lista de Inscritos", acumulado);
+
+        if (acumulado.isEmpty()) {
+            acumulado = "No hay matriculados aún.\n";
+        }
+
+        // Mostrar en un QDialog con un QTextEdit para mejor visualización
+        QDialog dialog(this);
+        dialog.setWindowTitle("Lista de Matriculados");
+        dialog.resize(700, 500);
+
+        QVBoxLayout* dialogLayout = new QVBoxLayout(&dialog);
+
+        QTextEdit* textEdit = new QTextEdit(&dialog);
+        textEdit->setReadOnly(true);
+        textEdit->setPlainText(acumulado);
+
+        dialogLayout->addWidget(textEdit);
+
+        dialog.setLayout(dialogLayout);
+        dialog.exec();
     }
 
     void mostrarPlanesGUI() {
@@ -430,28 +533,66 @@ private slots:
             QMessageBox::critical(this, "Error", "No se pudo abrir planes.txt");
             return;
         }
+
         std::string linea;
         QString acumulado;
         bool hayDatos = false;
+
         while (std::getline(planf, linea)) {
             acumulado += QString::fromStdString(linea) + "\n";
             hayDatos = true;
         }
+        planf.close();
         if (!hayDatos) {
             acumulado = "No hay planes registrados.\n";
         }
-        QMessageBox::information(this, "Listado de Planes", acumulado);
+
+        // Mostrar en un QDialog con un QTextEdit
+        QDialog dialog(this);
+        dialog.setWindowTitle("Listado de Planes");
+        dialog.resize(700, 500);
+
+        QVBoxLayout* dialogLayout = new QVBoxLayout(&dialog);
+
+        QTextEdit* textEdit = new QTextEdit(&dialog);
+        textEdit->setReadOnly(true);
+        textEdit->setPlainText(acumulado);
+
+        dialogLayout->addWidget(textEdit);
+
+        dialog.setLayout(dialogLayout);
+        dialog.exec();
     }
 
     // ----------------------------------------------------------------------
-    // NUEVA FUNCIÓN: MATRICULAR ESTUDIANTES CON BOTÓN POR CANDIDATO
+    // NUEVA FUNCIÓN: MATRICULAR USUARIO CON BOTÓN POR CANDIDATO
     // ----------------------------------------------------------------------
-    void matricularEstudiantesGUI() {
+    void matricularUsuarioGUI() {
         bool ok;
-        QString univDestino = QInputDialog::getText(
-            this, "Matricular Estudiantes",
-            "Ingrese la universidad de destino para matricular:",
-            QLineEdit::Normal, "", &ok
+        // Crear una lista de universidades de destino (excluyendo Córdoba)
+        std::vector<std::string> univsDestino;
+        for (const auto& univ : listaUniversidades) {
+            std::string univLower = toLower(univ);
+            if (univLower != "universidad de cordoba" && univLower != "universidad de córdoba") {
+                univsDestino.push_back(univ);
+            }
+        }
+
+        if (univsDestino.empty()) {
+            QMessageBox::critical(this, "Error", "No hay universidades de destino disponibles.");
+            return;
+        }
+
+        // Crear una lista desplegable para seleccionar la universidad de destino
+        QStringList destList;
+        for (const auto& univ : univsDestino) {
+            destList << QString::fromStdString(univ);
+        }
+
+        QString univDestino = QInputDialog::getItem(
+            this, "Matricular Usuario",
+            "Seleccione la universidad de destino para matricular:",
+            destList, 0, false, &ok
         );
         if (!ok || univDestino.isEmpty()) return;
 
@@ -499,10 +640,10 @@ private slots:
             return;
         }
 
-        // Creamos un QDialog con scroll donde listamos cada candidato + botón "Matricular"
+        // Crear un QDialog con scroll donde listamos cada candidato + botón "Matricular"
         QDialog dialog(this);
         dialog.setWindowTitle(QString("Candidatos para %1").arg(univDestino));
-        dialog.resize(600, 400);
+        dialog.resize(800, 600); // Ajustar tamaño según necesidad
 
         QVBoxLayout* dialogLayout = new QVBoxLayout(&dialog);
 
@@ -516,7 +657,7 @@ private slots:
             const std::string& candLine = todasLineas[idx];
 
             QHBoxLayout* rowLayout = new QHBoxLayout();
-            // Label con la info
+            // Label con la info (puedes formatear mejor si lo deseas)
             QLabel* infoLabel = new QLabel(QString::fromStdString(candLine));
             QPushButton* matBtn = new QPushButton("Matricular");
 
@@ -592,6 +733,9 @@ private slots:
         dialog.setLayout(dialogLayout);
         dialog.exec();
     }
+
+private:
+    std::vector<std::string> listaUniversidades; // Lista de universidades cargadas
 };
 
 int main(int argc, char* argv[]) {
