@@ -10,12 +10,56 @@
 #include <QAction>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QDialog>
+#include <QScrollArea>
+#include <QGroupBox>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <iostream>
 
 #include "funciones.h"
 
+// Función auxiliar para obtener la universidad de destino de un plan
+// (reutilizamos la misma lógica que en el .cpp anterior)
+static std::string obtenerUniversidadDestinoDelPlan(const std::string &nombrePlan) {
+    std::ifstream archivo("planes.txt");
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir planes.txt.\n";
+        return "";
+    }
+
+    std::string linea;
+    while (std::getline(archivo, linea)) {
+        if (linea.empty()) continue;
+
+        // "<plan>:" ...
+        size_t pos = linea.find(":");
+        if (pos != std::string::npos) {
+            std::string planEncontrado = trim(linea.substr(0, pos));
+            if (toLower(planEncontrado) == toLower(nombrePlan)) {
+                // Formato: "Plan1: UnivCordoba --> UnivZaragoza, Carrera: X"
+                size_t flechaPos = linea.find("-->");
+                if (flechaPos == std::string::npos) {
+                    return "";
+                }
+                size_t startDestino = flechaPos + 3;
+                size_t comaPos = linea.find(",", startDestino);
+                std::string univDestino;
+                if (comaPos != std::string::npos) {
+                    univDestino = trim(linea.substr(startDestino, comaPos - startDestino));
+                } else {
+                    univDestino = trim(linea.substr(startDestino));
+                }
+                return univDestino;
+            }
+        }
+    }
+    return "";
+}
+
 class MainWindow : public QMainWindow {
+
 public:
     MainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
         // --- Configurar la ventana ---
@@ -52,9 +96,10 @@ public:
         QLabel* introLabel = new QLabel(
             "Bienvenido/a al Sistema de Gestión SICUE.\n\n"
             "Este programa permite:\n"
-            " - Inscribir usuarios en el sistema.\n"
+            " - Inscribir usuarios.\n"
             " - Agregar planes de convalidación.\n"
-            " - Consultar inscripciones, mostrar planes y más.\n\n"
+            " - Consultar inscripciones, mostrar planes...\n"
+            " - Matricular estudiantes.\n\n"
             "Utiliza los botones inferiores para navegar por las distintas funcionalidades."
         );
         introLabel->setWordWrap(true);
@@ -64,7 +109,7 @@ public:
             color: #2c3e50;
             margin: 20px;
         )");
-        mainLayout->addWidget(introLabel, /*stretch=*/1);
+        mainLayout->addWidget(introLabel, 1);
 
         // 3) BARRA DE BOTONES
         QHBoxLayout* buttonLayout = new QHBoxLayout();
@@ -75,6 +120,7 @@ public:
         QPushButton* consultarBtn        = new QPushButton("Consultar Inscripción");
         QPushButton* mostrarInscritosBtn = new QPushButton("Mostrar Inscritos");
         QPushButton* mostrarPlanesBtn    = new QPushButton("Mostrar Planes");
+        QPushButton* matricularBtn       = new QPushButton("Matricular Estudiantes");
         QPushButton* salirBtn            = new QPushButton("Salir");
 
         buttonLayout->addWidget(inscribirBtn);
@@ -82,6 +128,7 @@ public:
         buttonLayout->addWidget(consultarBtn);
         buttonLayout->addWidget(mostrarInscritosBtn);
         buttonLayout->addWidget(mostrarPlanesBtn);
+        buttonLayout->addWidget(matricularBtn);
         buttonLayout->addWidget(salirBtn);
 
         // Conexiones (lambdas)
@@ -90,6 +137,7 @@ public:
         connect(consultarBtn,        &QPushButton::clicked, this, [this]() { consultarInscripcionGUI(); });
         connect(mostrarInscritosBtn, &QPushButton::clicked, this, [this]() { mostrarInscritosGUI(); });
         connect(mostrarPlanesBtn,    &QPushButton::clicked, this, [this]() { mostrarPlanesGUI(); });
+        connect(matricularBtn,       &QPushButton::clicked, this, [this]() { matricularEstudiantesGUI(); });
         connect(salirBtn,            &QPushButton::clicked, this, &MainWindow::close);
 
         // Estilos de los botones
@@ -103,8 +151,8 @@ public:
                 border-radius: 8px;
                 font-size: 14px;
                 font-weight: bold;
-                min-width: 160px;
-                min-height: 50px;
+                min-width: 140px;
+                min-height: 45px;
             }
             QPushButton:hover {
                 background-color: #3498db;
@@ -115,9 +163,9 @@ public:
         )");
     }
 
-private:
+private slots:
     // ----------------------------------------------------------------------
-    // Funciones GUI auxiliares para replicar la lógica de funciones.cpp
+    // FUNCIONES GUI (similares a las de funciones.cpp)
     // ----------------------------------------------------------------------
 
     void inscribirUsuarioGUI() {
@@ -136,7 +184,7 @@ private:
             return;
         }
 
-        // 2) Tipo de usuario
+        // 2) Tipo de usuario (Alumno/Profesor)
         QStringList tipos; 
         tipos << "Alumno" << "Profesor";
         QString tipoUsuario = QInputDialog::getItem(this, "Tipo de Usuario",
@@ -194,9 +242,7 @@ private:
             QMessageBox::critical(this, "Error", "No se pudo abrir preinscritos.txt");
             return;
         }
-        // Obtenemos la fecha
         std::string fecha = obtenerFechaActual();
-        // Convertimos a std::string
         std::string tipo = (tipoUsuario == "Alumno") ? "Alumno" : "Profesor";
         pre << dni.toStdString() << ", "
             << nombre.toStdString() << " " << apellidos.toStdString() << ", "
@@ -205,8 +251,7 @@ private:
             << cuatrimestre << " cuatrimestre(s), "
             << "en proceso, "
             << fecha << ", "
-            << tipo
-            << "\n";
+            << tipo << "\n";
         pre.close();
 
         QMessageBox::information(this, "Éxito",
@@ -253,8 +298,8 @@ private:
 
         // 4) Carrera
         QString carrera = QInputDialog::getText(this, "Carrera",
-                                               "Ingrese la carrera asociada:", QLineEdit::Normal,
-                                               "", &ok);
+                                               "Ingrese la carrera asociada al plan:",
+                                               QLineEdit::Normal, "", &ok);
         if (!ok) return;
         if (!existeCarrera(carrera.toStdString())) {
             QMessageBox::warning(this, "Error", "La carrera no existe en carrera.txt.");
@@ -313,8 +358,7 @@ private:
                                             "", &ok);
         if (!ok || dni.isEmpty()) return;
 
-        // Simulamos la lógica de consultarInscripcion() (versión resumida)
-        // 1) Buscar en preinscritos
+        // Buscar en preinscritos
         {
             std::ifstream pre("preinscritos.txt");
             if (pre.is_open()) {
@@ -334,7 +378,7 @@ private:
             }
         }
 
-        // 2) Buscar en inscritos
+        // Buscar en inscritos
         {
             std::ifstream ins("inscritos.txt");
             if (ins.is_open()) {
@@ -354,7 +398,7 @@ private:
             }
         }
 
-        // 3) No encontrado
+        // No encontrado
         QMessageBox::information(this, "No encontrado",
                                  QString("El usuario %1 no está en preinscritos ni en inscritos.").arg(dni));
     }
@@ -398,12 +442,157 @@ private:
         }
         QMessageBox::information(this, "Listado de Planes", acumulado);
     }
-};
 
-// ------------------------------------------------------------------------
-// MAIN (Qt)
-// ------------------------------------------------------------------------
-#include <QObject>
+    // ----------------------------------------------------------------------
+    // NUEVA FUNCIÓN: MATRICULAR ESTUDIANTES CON BOTÓN POR CANDIDATO
+    // ----------------------------------------------------------------------
+    void matricularEstudiantesGUI() {
+        bool ok;
+        QString univDestino = QInputDialog::getText(
+            this, "Matricular Estudiantes",
+            "Ingrese la universidad de destino para matricular:",
+            QLineEdit::Normal, "", &ok
+        );
+        if (!ok || univDestino.isEmpty()) return;
+
+        // Leemos preinscritos y guardamos todas las líneas
+        std::ifstream preFile("preinscritos.txt");
+        if (!preFile.is_open()) {
+            QMessageBox::critical(this, "Error", "No se pudo abrir preinscritos.txt");
+            return;
+        }
+
+        std::vector<std::string> todasLineas;
+        std::vector<int> indicesCandidatos;  // índices en todasLineas que coinciden
+        std::string linea;
+        int lineIndex = 0;
+
+        while (std::getline(preFile, linea)) {
+            todasLineas.push_back(linea);
+            if (!linea.empty()) {
+                // Separamos la línea para obtener el plan (4º campo)
+                // Formato: DNI, Nombre completo, Correo, Plan, Cuatrimestre, Estado, Fecha, Tipo
+                std::stringstream ss(linea);
+                std::vector<std::string> partes;
+                std::string tmp;
+                while (std::getline(ss, tmp, ',')) {
+                    partes.push_back(trim(tmp));
+                }
+                if (partes.size() >= 4) {
+                    std::string planUsuario = partes[3]; // el 4º campo
+                    // Obtenemos la univ. destino real del plan
+                    std::string univDelPlan = obtenerUniversidadDestinoDelPlan(planUsuario);
+                    if (toLower(trim(univDelPlan)) == toLower(trim(univDestino.toStdString()))) {
+                        indicesCandidatos.push_back(lineIndex);
+                    }
+                }
+            }
+            lineIndex++;
+        }
+        preFile.close();
+
+        if (indicesCandidatos.empty()) {
+            QMessageBox::information(
+                this, "Sin resultados",
+                QString("No hay usuarios preinscritos para '%1'.").arg(univDestino)
+            );
+            return;
+        }
+
+        // Creamos un QDialog con scroll donde listamos cada candidato + botón "Matricular"
+        QDialog dialog(this);
+        dialog.setWindowTitle(QString("Candidatos para %1").arg(univDestino));
+        dialog.resize(600, 400);
+
+        QVBoxLayout* dialogLayout = new QVBoxLayout(&dialog);
+
+        // ScrollArea para poder ver muchos candidatos
+        QScrollArea* scrollArea = new QScrollArea(&dialog);
+        QWidget* container = new QWidget(scrollArea);
+        QVBoxLayout* containerLayout = new QVBoxLayout(container);
+
+        // Por cada candidato, creamos un "row"
+        for (int idx : indicesCandidatos) {
+            const std::string& candLine = todasLineas[idx];
+
+            QHBoxLayout* rowLayout = new QHBoxLayout();
+            // Label con la info
+            QLabel* infoLabel = new QLabel(QString::fromStdString(candLine));
+            QPushButton* matBtn = new QPushButton("Matricular");
+
+            // Conectar el botón "Matricular"
+            connect(matBtn, &QPushButton::clicked, this, [this, &dialog, &todasLineas, idx, infoLabel, matBtn]() {
+                // 1) Cambiar estado en la línea => "confirmada"
+                std::string lin = todasLineas[idx];
+                std::vector<std::string> partes;
+                {
+                    std::stringstream sst(lin);
+                    std::string p;
+                    while (std::getline(sst, p, ',')) {
+                        partes.push_back(trim(p));
+                    }
+                }
+                // partes[5] debería ser "en proceso"
+                if (partes.size() > 5) {
+                    partes[5] = "confirmada";
+                }
+
+                // 2) Guardarlo en inscritos.txt
+                std::ofstream insFile("inscritos.txt", std::ios::app);
+                if (!insFile.is_open()) {
+                    QMessageBox::critical(&dialog, "Error", "No se pudo abrir inscritos.txt");
+                    return;
+                }
+                // Reconstruimos la línea
+                std::stringstream reconst;
+                for (size_t k = 0; k < partes.size(); k++) {
+                    reconst << partes[k];
+                    if (k < partes.size() - 1) reconst << ", ";
+                }
+                insFile << reconst.str() << "\n";
+                insFile.close();
+
+                // 3) Eliminar del vector en memoria
+                todasLineas[idx].clear(); // marcamos como vacío
+
+                // 4) Reescribir preinscritos.txt sin esa línea
+                {
+                    std::ofstream outPre("preinscritos.txt");
+                    if (!outPre.is_open()) {
+                        QMessageBox::critical(&dialog, "Error", "Error reescribiendo preinscritos.txt");
+                        return;
+                    }
+                    for (auto &l : todasLineas) {
+                        if (!l.empty()) {
+                            outPre << l << "\n";
+                        }
+                    }
+                }
+
+                // 5) Opcional: Quitar la fila de la interfaz
+                infoLabel->setText("MATRICULADO");
+                matBtn->setEnabled(false);
+
+                QMessageBox::information(&dialog, "Matriculado",
+                    "Usuario matriculado y movido a inscritos.txt.");
+            });
+
+            rowLayout->addWidget(infoLabel);
+            rowLayout->addWidget(matBtn);
+
+            containerLayout->addLayout(rowLayout);
+        }
+
+        container->setLayout(containerLayout);
+        scrollArea->setWidget(container);
+        scrollArea->setWidgetResizable(true);
+
+        dialogLayout->addWidget(scrollArea);
+
+        dialog.setLayout(dialogLayout);
+        dialog.exec();
+    }
+};
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);

@@ -7,3 +7,9 @@ Asignaturas convalidadas:
 - BBDD
 
 
+Plan B: Universidad de Cordoba --> Universidad de Zaragoza, Carrera: Medicina
+Asignaturas convalidadas:
+- Farmacia
+- Droga
+
+
