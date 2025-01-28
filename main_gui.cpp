@@ -1,5 +1,3 @@
-// main_gui.cpp
-
 #include <QApplication>
 #include <QMainWindow>
 #include <QMenuBar>
@@ -110,7 +108,7 @@ public:
         QVBoxLayout* mainLayout = new QVBoxLayout(central);
 
         // 1) TÍTULO PRINCIPAL
-        QLabel* title = new QLabel("Sistema Gestión SICUE (Qt)");
+        QLabel* title = new QLabel("Sistema Gestión SICUE");
         title->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
         title->setStyleSheet(R"(
             font-size: 28px;
@@ -127,7 +125,8 @@ public:
             " - Agregar planes de convalidación.\n"
             " - Consultar inscripciones, mostrar planes...\n"
             " - Matricular estudiantes.\n\n"
-            "Utiliza los botones inferiores para navegar por las distintas funcionalidades."
+            "Utiliza los botones inferiores para navegar por las distintas funcionalidades.\n"
+            "Si necesitas información sobre como funciona el programa, dispones de un tutorial."
         );
         introLabel->setWordWrap(true);
         introLabel->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
@@ -482,7 +481,7 @@ public:
         // Construir el QString para mostrar
         QString acumulado;
         for (const auto& [plan, matriculados] : matriculadosPorPlan) {
-            acumulado += QString("Plan %1:\n").arg(QString::fromStdString(plan));
+            acumulado += QString("%1:\n").arg(QString::fromStdString(plan));
             for (const auto& matriculado : matriculados) {
                 // Formatear cada matriculado de manera legible
                 // Por ejemplo, extraer campos y mostrar de forma estructurada
