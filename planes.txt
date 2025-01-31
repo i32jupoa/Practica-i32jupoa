@@ -1,21 +1,16 @@
-Plan A: Universidad de Cordoba --> Universidad de Malaga, Carrera: Ingenieria Informatica
+Plan A: Universidad de Córdoba --> Universidad de Huelva, Carrera: Ingenieria Informatica
 Asignaturas convalidadas:
-- POO
-- SO
-- AC
-- IS
-- BBDD
+- Ingenieria de software
+- Programacion Orientada a Objetos´
+- Base de Datos
+- Arquitectura de Computadores
+- Sistemas operativos
 
 
-Plan B: Universidad de Cordoba --> Universidad de Zaragoza, Carrera: Medicina
+Plan B: Universidad de Córdoba --> Universitat de Valencia, Carrera: Medicina
 Asignaturas convalidadas:
-- Farmacia
-- Droga
-
-
-Plan C: Universidad de Córdoba --> Universidad de Granada, Carrera: Medicina
-Asignaturas convalidadas:
-- hola
-- adios
+- Anatomia
+- Biologia
+- Quimica
 
 

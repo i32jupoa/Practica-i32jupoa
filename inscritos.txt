@@ -1,5 +1,1 @@
-12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 2 cuatrimestre(s), confirmada, 2025-01-27, Alumno
-23456789B, Raul Rodriguez Sotillo, i32rosor@uco.es, Plan B, 2 cuatrimestre(s), confirmada, 2025-01-28, Alumno
-12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan B, 1 cuatrimestre(s), confirmada, 2025-01-28, Profesor
-34567890C, Adam Galvez Redondo, i32garea@uco.es, Plan A, 1 cuatrimestre(s), confirmada, 2025-01-28, Profesor
-45678901D, Ignacio Armenteros Perez, nachomaricon@gmail.com, Plan C, 2 cuatrimestre(s), confirmada, 2025-01-28, Profesor
+12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 1 cuatrimestre(s), confirmada, 2025-01-31, Alumno

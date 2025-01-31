@@ -88,7 +88,7 @@ public:
         listaUniversidades = cargarUniversidades();
 
         // --- Configurar la ventana ---
-        setWindowTitle("Sistema Gestión SICUE (Qt)");
+        setWindowTitle("Sistema Gestión SICUE");
         resize(900, 600);
 
         // --- Menú superior ---
@@ -126,7 +126,7 @@ public:
             " - Consultar inscripciones, mostrar planes...\n"
             " - Matricular estudiantes.\n\n"
             "Utiliza los botones inferiores para navegar por las distintas funcionalidades.\n"
-            "Si necesitas información sobre como funciona el programa, dispones de un tutorial."
+            "Si necesita información sobre como funciona el programa, dispones de un tutorial."
         );
         introLabel->setWordWrap(true);
         introLabel->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
@@ -203,7 +203,7 @@ public:
         // Verificar en Usuarios.txt
         if (!existeEnFichero(dni.toStdString(), "Usuarios.txt")) {
             QMessageBox::warning(this, "Error",
-                                 "El Usuario no cumple requisitos (DNI no encontrado en Usuarios.txt).");
+                                 "El Usuario no cumple los requisitos para participar en el programa.");
             return;
         }
 
@@ -239,7 +239,7 @@ public:
         if (!ok || plan.isEmpty()) return;
 
         if (!existePlan(plan.toStdString())) {
-            QMessageBox::warning(this, "Error", "El plan no existe en planes.txt.");
+            QMessageBox::warning(this, "Error", "El plan no existe.");
             return;
         }
 
@@ -278,7 +278,7 @@ public:
         pre.close();
 
         QMessageBox::information(this, "Éxito",
-                                 "Se ha inscrito al usuario en preinscritos.txt (en proceso).");
+                                 "Inscripción realizada con éxito, puede ver el estado de la inscripción en Consultar Inscripción.");
     }
 
     void agregarPlanGUI() {
@@ -326,7 +326,7 @@ public:
                                                QLineEdit::Normal, "", &ok);
         if (!ok || carrera.isEmpty()) return;
         if (!existeCarrera(carrera.toStdString())) {
-            QMessageBox::warning(this, "Error", "La carrera no existe en carrera.txt.");
+            QMessageBox::warning(this, "Error", "La carrera no se encuentra en el programa.");
             return;
         }
 
@@ -405,7 +405,7 @@ public:
                                 fecha = partes[6];
                             }
                             QMessageBox::information(this, "Resultado",
-                                QString("El usuario %1 está en preinscritos (en proceso).\nFecha de Inscripción: %2.")
+                                QString("El usuario %1 está en la lista de preinscritos (inscripción en proceso).\nFecha de Inscripción: %2.")
                                 .arg(dni).arg(QString::fromStdString(fecha)));
                             return;
                         }
@@ -437,7 +437,7 @@ public:
                                 fecha = partes[6];
                             }
                             QMessageBox::information(this, "Resultado",
-                                QString("El usuario %1 está en matriculados (confirmada).\nFecha de Inscripción: %2.")
+                                QString("El usuario %1 está en la lista de matriculados (inscripción confirmada).\nFecha de Inscripción: %2.")
                                 .arg(dni).arg(QString::fromStdString(fecha)));
                             return;
                         }
@@ -448,7 +448,7 @@ public:
 
         // No encontrado
         QMessageBox::information(this, "No encontrado",
-                                 QString("El usuario %1 no está en preinscritos ni en matriculados.").arg(dni));
+                                 QString("El usuario %1 no ha realizado la inscripción aún.").arg(dni));
     }
 
     void mostrarListaMatriculadosGUI() {
@@ -714,7 +714,7 @@ public:
                 matBtn->setEnabled(false);
 
                 QMessageBox::information(&dialog, "Matriculado",
-                    "Usuario matriculado y movido a inscritos.txt.");
+                    "Usuario matriculado y movido a inscritos la lista de usuarios inscritos.");
             });
 
             rowLayout->addWidget(infoLabel);
