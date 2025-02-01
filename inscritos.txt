@@ -1,1 +1,2 @@
-12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 1 cuatrimestre(s), confirmada, 2025-01-31, Alumno
+12345678A, Alvaro Jurado Pozo, i32jupoa@uco.es, Plan A, 2 cuatrimestre(s), confirmada, 2025-02-01, Alumno
+23456789B, Luis Rafael Martinez, luis.martinez@uco.es, Plan A, 2 cuatrimestre(s), confirmada, 2025-02-01, Profesor

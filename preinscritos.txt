@@ -1,1 +1,2 @@
-23456789B, Luis Rafael Martinez Carrillo, in1macal@uco.es, Plan A, 2 cuatrimestre(s), en proceso, 2025-01-31, Profesor
+34567890C, Cristiano Ronaldo, i32rodoc@uco.es, Plan A, 1 cuatrimestre(s), en proceso, 2025-02-01, Alumno
+45678901D, Rafael Nadal, i32napar@uco.es, Plan A, 2 cuatrimestre(s), en proceso, 2025-02-01, Alumno
